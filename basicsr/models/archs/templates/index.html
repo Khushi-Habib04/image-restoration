@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Denoising</title>
+    <style>
+        #drop-area {
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            width: 300px;
+            font-family: sans-serif;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        #drop-area.highlight {
+            border-color: purple;
+        }
+        p {
+            margin-top: 0;
+        }
+        .my-form {
+            margin-bottom: 10px;
+        }
+        #gallery img {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="drop-area">
+        <form class="my-form">
+            <p>Upload your noisy image by dragging it here or clicking to select</p>
+            <input type="file" id="fileElem" accept="image/*" onchange="handleFiles(this.files)">
+            <label class="button" for="fileElem">Select File</label>
+        </form>
+        <div id="gallery"></div>
+    </div>
+
+    <script>
+        let dropArea = document.getElementById('drop-area')
+
+        // Prevent default drag behaviors
+        ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false)
+            document.body.addEventListener(eventName, preventDefaults, false)
+        })
+
+        // Highlight drop area when item is dragged over it
+        ;['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false)
+        })
+
+        ;['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false)
+        })
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false)
+
+        function preventDefaults (e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
+
+        function handleDrop(e) {
+            let dt = e.dataTransfer
+            let files = dt.files
+
+            handleFiles(files)
+        }
+
+        function handleFiles(files) {
+            files = [...files]
+            files.forEach(uploadFile)
+        }
+
+        function uploadFile(file) {
+            let url = '/upload'
+            let formData = new FormData()
+
+            formData.append('file', file)
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            }).then(response => response.blob())
+              .then(blob => {
+                  let img = document.createElement('img')
+                  img.src = URL.createObjectURL(blob)
+                  document.getElementById('gallery').appendChild(img)
+              })
+              .catch(() => { console.error('Upload failed') })
+        }
+    </script>
+</body>
+</html>

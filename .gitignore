@@ -1,0 +1,13 @@
+.DS_Store
+.idea/*
+experiments
+logs/
+*results*
+*__pycache__*
+*.sh
+datasets
+basicsr.egg-info
+basicsr/datasets/
+DND
+Denoising
+ basicsr/models/archs/KBNet_s_model.pth

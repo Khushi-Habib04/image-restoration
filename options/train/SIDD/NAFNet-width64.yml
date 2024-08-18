@@ -1,0 +1,108 @@
+# ------------------------------------------------------------------------
+# Copyright (c) 2022 megvii-model. All Rights Reserved.
+# ------------------------------------------------------------------------
+# Modified from BasicSR (https://github.com/xinntao/BasicSR)
+# Copyright 2018-2020 BasicSR Authors
+# ------------------------------------------------------------------------
+# general settings
+name: KIR_Width64
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  train:
+    name: SIDD
+    type: PairedImageDataset
+    dataroot_gt: /all/cse/uday/image/NAFNet/basicsr/datasets/val/SIDD/gt_crops.lmdb
+    dataroot_lq: /all/cse/uday/image/NAFNet/basicsr/datasets/val/SIDD/input_crops.lmdb
+
+    filename_tmpl: '{}'
+    io_backend:
+      type: lmdb
+
+    gt_size: 64
+    use_flip: false
+    use_rot: false
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 8
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: SIDD_val
+    type: PairedImageDataset
+    dataroot_gt: /all/cse/uday/image/NAFNet/basicsr/datasets/val/SIDD/gt_crops.lmdb
+    dataroot_lq: /all/cse/uday/image/NAFNet/basicsr/datasets/val/SIDD/input_crops.lmdb
+    io_backend:
+      type: lmdb
+
+
+network_g:
+  type: KBNet_s
+  width: 64
+  enc_blk_nums: [2, 2, 4, 8]
+  middle_blk_num: 12
+  dec_blk_nums: [2, 2, 2, 2]
+
+# path
+path:
+  pretrain_network_g: /all/cse/uday/image/NAFNet/experiments/KIR_Width64/models/net_g_400000.pth
+  strict_load_g: true
+  resume_state: /all/cse/uday/image/NAFNet/experiments/KIR_Width64/training_states/400000.state
+
+# training settings
+train:
+  optim_g:
+    type: AdamW
+    lr: !!float 1e-3
+    weight_decay: 0.
+    betas: [0.9, 0.9]
+
+  scheduler:
+    type: TrueCosineAnnealingLR
+    T_max: 500000
+    eta_min: !!float 1e-6
+
+  total_iter: 500000
+  warmup_iter: -1 # no warm up
+
+  # losses
+  pixel_opt:
+    type: PSNRLoss
+    loss_weight: 1
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: !!float 1e4
+  save_img: false
+  use_image: false
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 1000
+  save_checkpoint_freq: !!float 10e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
